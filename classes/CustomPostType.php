@@ -19,6 +19,7 @@ if (!class_exists('\ExtraContent\CustomPostType')) {
 		public function registerHookCallbacks() {
 			add_action('init', __CLASS__ . '::registerPostType');
 			add_action('save_post', __CLASS__ . '::savePost', 10, 2);
+			add_action('before_delete_post', __CLASS__ . '::beforeDeletePost', 10, 2);
 			add_filter('is_protected_meta', __CLASS__ . '::isProtectedMeta', 10, 3);
 			add_filter('default_hidden_meta_boxes', __CLASS__ . '::defaultHiddenMetaBoxes', 10, 2);
 
@@ -103,6 +104,13 @@ if (!class_exists('\ExtraContent\CustomPostType')) {
 				return;
 			}
 			$location = get_post_meta($post->ID, 'exco_location', true);
+			if ($location === false) {
+				$location = 'bottom';
+			}
+			$priority = get_post_meta($post->ID, 'exco_priority', true);
+			if ($priority === false) {
+				$priority = 1;
+			}
 			?>
 <div class="inside">
 	<label for="exco_settings_location"><h3>Location:</h3></label>
@@ -116,6 +124,12 @@ if (!class_exists('\ExtraContent\CustomPostType')) {
 		<input id="exco_settings_location_none" name="exco_settings_location" type="radio" value="none"<?php checked($location, 'none'); ?>>
 		<label for="exco_settings_location_none">None (disabled)</label>
 	</fieldset>
+	<label for="exco_settings_priority"><h3>Priority:</h3></label>
+	<select name="exco_settings_priority">
+		<?php for ($i=1;$i<=9;$i++) : ?>
+		<option value="<?= $i ?>"<?php selected($priority, $i); ?>><?= $i ?></option>
+		<?php endfor; ?>
+	</select>
 </div>
 			<?php
 		}
@@ -141,11 +155,49 @@ if (!class_exists('\ExtraContent\CustomPostType')) {
 				delete_post_meta($post_id, 'exco_location');
 			}
 
+			if (isset($_POST['exco_settings_priority'])) {
+				update_post_meta($post_id, 'exco_priority', $_POST['exco_settings_priority']);
+			} else {
+				delete_post_meta($post_id, 'exco_priority');
+			}
+			self::updateItemsCache();
 		}
+
+		public static function beforeDeletePost($post_id) {
+			self::updateItemsCache($post_id);
+		}
+
+		private static function updateItemsCache($exclude_id = -1) {
+			$posts = get_posts([
+				'post_type' => self::POST_TYPE_SLUG,
+				'orderby' => 'ID',
+				'posts_per_page' => -1,
+				'post_status' => 'publish',
+				'exclude' => $exclude_id,
+			]);
+			$cache = [];
+			foreach ($posts as $post) {
+				$cache[$post->ID]['categories'] = wp_get_object_terms($post->ID, 'category', ['fields' => 'ids']);
+				$cache[$post->ID]['tags'] = wp_get_object_terms($post->ID, 'post_tag', ['fields' => 'ids']);
+				$cache[$post->ID]['location'] = get_post_meta($post->ID, 'exco_location', true);
+				$cache[$post->ID]['priority'] = get_post_meta($post->ID, 'exco_priority', true);
+			}
+			update_option('exco_items_cache', serialize($cache), true);
+		}
+
+		public static function getItemsCache() {
+			$cache = get_option('exco_items_cache');
+			if ($cache !== false) {
+				$cache = unserialize($cache);
+			}
+			return $cache;
+		}
+
 
 		public static function isProtectedMeta($protected, $meta_key, $meta_type) {
 			switch($meta_key) {
 				case 'exco_location':
+				case 'exco_priority':
 					$protected = true;
 					break;
 			}
