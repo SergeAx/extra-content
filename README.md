@@ -7,7 +7,7 @@ WordPress plugin to add custom extra content at the end and/or beginning of sele
 
 ## Installation
 
-Copy plugin directory with all contents into your `/wp-content/plugins/` directory.
+Copy all files into your `/wp-content/plugins/extra-content/` directory.
 
 ## Contributors
 
