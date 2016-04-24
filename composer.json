@@ -1,0 +1,20 @@
+{
+	"name": "sergeax/extra-content",
+	"description": "WordPress plugin to add custom extra content at the end and/or beginning of selected posts",
+	"type": "project",
+	"authors": [
+		{
+			"name": "Sergey Aksenov",
+			"email": "sergeax@gmail.com"
+		}
+	],
+	"license": "GPL-3.0",
+	"require": {
+		"php": ">=5.5"
+	},
+	"autoload": {
+		"psr-4": {
+			"ExtraContent\\": "classes/"
+		}
+	}
+}
