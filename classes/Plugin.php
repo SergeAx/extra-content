@@ -40,6 +40,9 @@ if (!class_exists('\ExtraContent\Plugin')) {
 
 		public static function theContent($content) {
 			global $post;
+			if(!is_singular() || !is_main_query() || !in_the_loop()) {
+				return $content;
+			}
 			$cache = \ExtraContent\CustomPostType::getItemsCache();
 			if ($cache === false) { // No items to display at all
 				return $content;
